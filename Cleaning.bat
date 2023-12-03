@@ -3,7 +3,7 @@
 NET SESSION >nul 2>&1
 if %errorLevel% neq 0 (
     echo You must run this script as an administrator.
-    echo Right-click on the script and select "Run as administrator".
+    echo Right-click on the script and select "Run as administrator."
     pause
     exit /b
 )
@@ -30,7 +30,7 @@ REM Confirm with the user before proceeding
 set /p CONFIRMATION=Are you sure you want to run Disk Cleanup on drive %TARGET_DRIVE%? (Y/N): 
 
 if /i not "%CONFIRMATION%"=="Y" (
-    echo Cleanup canceled by user.
+    echo Cleanup canceled by the user.
     goto :EndScript
 )
 
@@ -267,7 +267,7 @@ wmic product get name
 set /p UNINSTALL_PROGRAM=Enter the program name to uninstall (or type 'cancel' to cancel): 
 
 if /i "%UNINSTALL_PROGRAM%"=="cancel" (
-    echo Uninstall canceled by user.
+    echo Uninstall canceled by the user.
     goto :EndScript
 )
 
