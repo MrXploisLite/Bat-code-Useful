@@ -2,10 +2,10 @@
 setlocal enabledelayedexpansion
 
 :: Set the target drive (change to the appropriate drive letter if needed)
-set TARGET_DRIVE=C:
+set /p TARGET_DRIVE=Enter the target drive letter (e.g., C): 
 
 :: Set the log file path
-set LOG_FILE_PATH=C:\Logs
+set LOG_FILE_PATH=%TARGET_DRIVE%:\Logs
 set LOG_FILE=%LOG_FILE_PATH%\cleanup_log.txt
 
 :: Ensure the log file directory exists
@@ -26,35 +26,25 @@ set "CLEANUP_EXECUTED="
 echo Cleanup Options:
 echo 1. Normal Cleanup
 echo 2. Extended Cleanup (additional items like Windows Update Cleanup)
-echo 3. Choose specific cleanup categories
-echo 4. Schedule automatic cleanup
-echo 5. View Cleanup Log
-echo 6. Empty Recycle Bin
-echo 7. Remove Temporary Files
-echo 8. Compact OS (Windows 10+)
-echo 9. Remove Windows Update Files
-echo 10. Remove System Restore Points
-echo 11. Optimize Drives
-echo 12. Show Cleanup Options (cleanmgr.exe)
-echo 13. Disk Cleanup Settings
-echo 14. Cleanup with PowerShell (Windows 10+)
-echo 15. Uninstall Unused Programs
-echo 16. Disable Hibernate
-echo 17. Check Disk for Errors
-echo 18. System File Checker (SFC)
-echo 19. Disk Cleanup Manager (cleanmgr.exe /lowdisk)
-echo 20. Exit
+echo 3. Remove Windows Update Files
+echo 4. Remove System Restore Points
+echo 5. Optimize Drives
+echo 6. Uninstall Unused Programs
+echo 7. Check Disk for Errors
+echo 8. System File Checker (SFC)
+echo 9. Disk Cleanup Manager (cleanmgr.exe /lowdisk)
+echo 10. Exit
 echo.
 
-set /p CLEANUP_OPTIONS=Enter your choice (1-20): 
+set /p CLEANUP_OPTIONS=Enter your choice (1-10): 
 
-if not "%CLEANUP_OPTIONS%" geq "1" if not "%CLEANUP_OPTIONS%" leq "20" (
-    echo Invalid option. Please enter a number between 1 and 20.
+if not "%CLEANUP_OPTIONS%" geq "1" if not "%CLEANUP_OPTIONS%" leq "10" (
+    echo Invalid option. Please enter a number between 1 and 10.
     timeout /nobreak /t 3 >nul
     goto :CleanupOptions
 )
 
-if "%CLEANUP_OPTIONS%"=="20" (
+if "%CLEANUP_OPTIONS%"=="10" (
     echo Cleanup completed. Exiting script.
     goto :EndScript
 ) else if not defined CLEANUP_EXECUTED (
@@ -94,116 +84,31 @@ exit /b
 
 :ExecuteCleanup
 :: Execute the cleanup option based on the user's choice
-if "%1"=="19" (
+if "%1"=="9" (
     call :RunDiskCleanupManager
-) else if "%1"=="18" (
-    call :RunSFC
-) else if "%1"=="17" (
-    call :RunCheckDisk
-) else if "%1"=="16" (
-    call :DisableHibernate
-) else if "%1"=="15" (
-    call :UninstallUnusedPrograms
-) else if "%1"=="14" (
-    call :RunPowerShellCleanup
-) else if "%1"=="13" (
-    call :ShowCleanupOptions
-) else if "%1"=="12" (
-    call :OptimizeDrives
-) else if "%1"=="11" (
-    call :RemoveSystemRestorePoints
-) else if "%1"=="10" (
-    call :RemoveWindowsUpdateFiles
-) else if "%1"=="9" (
-    call :CompactOS
 ) else if "%1"=="8" (
-    call :RemoveTemporaryFiles
+    call :RunSFC
 ) else if "%1"=="7" (
-    call :EmptyRecycleBin
+    call :RunCheckDisk
 ) else if "%1"=="6" (
-    call :ViewCleanupLog
+    call :UninstallUnusedPrograms
 ) else if "%1"=="5" (
-    call :ScheduleAutomaticCleanup
+    call :OptimizeDrives
 ) else if "%1"=="4" (
-    call :ChooseCleanupCategories
+    call :RemoveSystemRestorePoints
+) else if "%1"=="3" (
+    call :RemoveWindowsUpdateFiles
 ) else (
     call :RunDiskCleanup %1
 )
-exit /b
 
-:ChooseCleanupCategories
-:: Allow users to choose specific cleanup categories
-cleanmgr /d %TARGET_DRIVE%
-call :LogCleanupSummary
-exit /b
-
-:ScheduleAutomaticCleanup
-:: Schedule automatic cleanup using Task Scheduler
-echo.
-echo Scheduling automatic cleanup...
-
-schtasks /create /tn "DiskCleanupTask" /tr "cleanmgr.exe /d %TARGET_DRIVE%" /sc weekly /d SUN /st 00:00
-
-if %errorlevel% equ 0 (
-    echo Automatic cleanup scheduled successfully.
-    echo To modify the schedule, use Task Scheduler.
-    echo.
+:: Ask if the user wants to return to the main menu
+set /p RETURN_TO_MENU=Do you want to return to the main menu? (Y/N): 
+if /i "%RETURN_TO_MENU%"=="Y" (
+    goto :CleanupMenu
+) else (
     goto :EndScript
-) else (
-    echo Error scheduling automatic cleanup. Please try again.
-    goto :CleanupMenu
 )
-
-:LogCleanupSummary
-:: Log the cleanup summary to the file with a timestamp
-echo. >> %LOG_FILE%
-echo Cleanup Summary for %TARGET_DRIVE% - !DATE! !TIME! >> %LOG_FILE%
-cleanmgr /sagerun:1 /d %TARGET_DRIVE% /L:%LOG_FILE%
-echo. >> %LOG_FILE%
-
-echo.
-set /p CONTINUE_CLEANUP=Do you want to perform another cleanup? (Y/N): 
-if /i "%CONTINUE_CLEANUP%"=="Y" (
-    goto :CleanupMenu
-)
-
-:ViewCleanupLog
-:: View the cleanup log
-if exist "%LOG_FILE%" (
-    echo.
-    echo Cleaning Log:
-    type "%LOG_FILE%"
-) else (
-    echo.
-    echo No cleanup log found.
-)
-
-echo.
-pause
-exit /b
-
-:EmptyRecycleBin
-:: Empty Recycle Bin
-echo.
-echo Emptying Recycle Bin on drive %TARGET_DRIVE%...
-rd /s /q "%TARGET_DRIVE%\$Recycle.bin"
-call :LogAction "Recycle Bin emptied on drive %TARGET_DRIVE%."
-exit /b
-
-:RemoveTemporaryFiles
-:: Remove Temporary Files
-echo.
-echo Removing temporary files on drive %TARGET_DRIVE%...
-del /q /f /s "%TARGET_DRIVE%\Windows\Temp\*.*"
-call :LogAction "Temporary files removed on drive %TARGET_DRIVE%."
-exit /b
-
-:CompactOS
-:: Compact OS (Windows 10+)
-echo.
-echo Compacting OS on drive %TARGET_DRIVE%...
-compact.exe /
-call :LogAction "OS compacted on drive %TARGET_DRIVE%."
 exit /b
 
 :RemoveWindowsUpdateFiles
@@ -230,22 +135,6 @@ defrag.exe %TARGET_DRIVE% /O
 call :LogAction "Drives optimized on drive %TARGET_DRIVE%."
 exit /b
 
-:ShowCleanupOptions
-:: Show Cleanup Options (cleanmgr.exe)
-echo.
-echo Displaying Cleanup Options for drive %TARGET_DRIVE%...
-cleanmgr /d %TARGET_DRIVE%
-call :LogAction "Cleanup options displayed on drive %TARGET_DRIVE%."
-exit /b
-
-:RunPowerShellCleanup
-:: Cleanup with PowerShell (Windows 10+)
-echo.
-echo Running cleanup with PowerShell on drive %TARGET_DRIVE%...
-powershell.exe -Command Start-Process -FilePath cleanmgr.exe -ArgumentList "/d %TARGET_DRIVE%" -Wait
-call :LogAction "Cleanup with PowerShell executed on drive %TARGET_DRIVE%."
-exit /b
-
 :UninstallUnusedPrograms
 :: Uninstall Unused Programs
 echo.
@@ -258,18 +147,17 @@ if /i "%UNINSTALL_PROGRAM%"=="cancel" (
     goto :EndScript
 )
 
-echo.
-echo Uninstalling program: %UNINSTALL_PROGRAM%...
-wmic product where name="%UNINSTALL_PROGRAM%" call uninstall
-call :LogAction "Program '%UNINSTALL_PROGRAM%' uninstalled on drive %TARGET_DRIVE%."
-exit /b
+:: Ask for confirmation before uninstalling the program
+set /p CONFIRM_UNINSTALL=Are you sure you want to uninstall %UNINSTALL_PROGRAM%? (Y/N): 
+if /i "%CONFIRM_UNINSTALL%"=="Y" (
+    echo.
+    echo Uninstalling program: %UNINSTALL_PROGRAM%...
+    wmic product where name="%UNINSTALL_PROGRAM%" call uninstall
+    call :LogAction "Program '%UNINSTALL_PROGRAM%' uninstalled on drive %TARGET_DRIVE%."
+) else (
+    echo Uninstall canceled by user.
+)
 
-:DisableHibernate
-:: Disable Hibernate
-echo.
-echo Disabling Hibernate on drive %TARGET_DRIVE%...
-powercfg.exe /h off
-call :LogAction "Hibernate disabled on drive %TARGET_DRIVE%."
 exit /b
 
 :RunCheckDisk
@@ -292,9 +180,22 @@ exit /b
 :: Disk Cleanup Manager (cleanmgr.exe /lowdisk)
 echo.
 echo Running Disk Cleanup Manager on drive %TARGET_DRIVE%...
-cleanmgr.exe /lowdisk /d %TARGET_DRIVE%
+cleanmgr /d %TARGET_DRIVE%
 call :LogAction "Disk Cleanup Manager executed on drive %TARGET_DRIVE%."
 exit /b
+
+:LogCleanupSummary
+:: Log the cleanup summary to the file with a timestamp
+echo. >> %LOG_FILE%
+echo Cleanup Summary for %TARGET_DRIVE% - !DATE! !TIME! >> %LOG_FILE%
+cleanmgr /sagerun:1 /d %TARGET_DRIVE% /L:%LOG_FILE%
+echo. >> %LOG_FILE%
+
+echo.
+set /p CONTINUE_CLEANUP=Do you want to perform another cleanup? (Y/N): 
+if /i "%CONTINUE_CLEANUP%"=="Y" (
+    goto :CleanupMenu
+)
 
 :LogAction
 :: Log the provided action to the file with a timestamp
